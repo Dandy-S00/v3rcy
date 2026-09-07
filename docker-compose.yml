@@ -21,7 +21,6 @@ services:
     image: mysql:8.4
     container_name: nitevow-db
     restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-nitevow}
       MYSQL_USER: ${MYSQL_USER:-nitevow_app}
