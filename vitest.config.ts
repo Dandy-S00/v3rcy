@@ -2,6 +2,7 @@ import { defineConfig } from "vitest/config";
 import path from "path";
 
 const templateRoot = path.resolve(import.meta.dirname);
+process.env.VITE_APP_TITLE ??= "v3rya";
 
 export default defineConfig({
   root: templateRoot,

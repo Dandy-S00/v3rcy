@@ -17,7 +17,7 @@ function createAdminContext(): TrpcContext {
       openId: "owner-77",
       email: "owner@nitevow.example",
       name: "Studio Owner",
-      loginMethod: "manus",
+      loginMethod: "oauth",
       role: "admin",
       createdAt: new Date(),
       updatedAt: new Date(),

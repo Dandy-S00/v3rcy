@@ -5,7 +5,7 @@ vi.mock("./db", () => ({ updateProfileMedia: mocks.updateProfileMedia }));
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
-const user = { id: 7, openId: "owner", name: "Owner", email: "owner@example.com", loginMethod: "manus", role: "user" as const, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() };
+const user = { id: 7, openId: "owner", name: "Owner", email: "owner@example.com", loginMethod: "oauth", role: "user" as const, createdAt: new Date(), updatedAt: new Date(), lastSignedIn: new Date() };
 const context = { user, req: {} as TrpcContext["req"], res: {} as TrpcContext["res"] } as TrpcContext;
 
 describe("profile.updateMedia owner controls", () => {
