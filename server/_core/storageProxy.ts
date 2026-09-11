@@ -1,11 +1,18 @@
 import type { Express } from "express";
 import { ENV } from "./env";
 
+export function isValidStorageKey(key: string): boolean {
+  if (!key || typeof key !== "string") return false;
+  if (key.includes("\0") || key.includes("..")) return false;
+  if (key.startsWith("/") || key.startsWith("\\")) return false;
+  return /^[a-zA-Z0-9_\-\./]+$/.test(key);
+}
+
 export function registerStorageProxy(app: Express) {
   app.get("/storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
-    if (!key) {
-      res.status(400).send("Missing storage key");
+    if (!key || !isValidStorageKey(key)) {
+      res.status(400).send("Invalid or missing storage key");
       return;
     }
 
