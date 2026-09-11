@@ -4,13 +4,19 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
+
+ARG VITE_APP_ID
+ARG VITE_OAUTH_PORTAL_URL
+ARG VITE_MAPS_API_URL
+ARG VITE_MAPS_API_KEY
+
 COPY . .
 
-RUN pnpm build
+RUN VITE_APP_ID=${VITE_APP_ID} VITE_OAUTH_PORTAL_URL=${VITE_OAUTH_PORTAL_URL} VITE_MAPS_API_URL=${VITE_MAPS_API_URL} VITE_MAPS_API_KEY=${VITE_MAPS_API_KEY} pnpm build
 
 ENV NODE_ENV=production
 ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["pnpm", "start"]

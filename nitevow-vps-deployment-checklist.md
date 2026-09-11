@@ -8,6 +8,7 @@ Repository: `Dandy-S00/nitevow`
 - [ ] VPS 1853920 is active and reachable over SSH.
 - [ ] Ubuntu and Docker are installed and working.
 - [ ] Docker Compose is available with `docker compose version`.
+- [ ] The existing Traefik network name is known; this Compose file defaults to `traefik`.
 - [ ] The VPS has enough free disk space for the source tree, Docker layers, MySQL data, and logs.
 - [ ] The firewall allows SSH, HTTP (80), and HTTPS (443).
 - [ ] MySQL port 3306 is not exposed publicly.
@@ -16,6 +17,7 @@ Repository: `Dandy-S00/nitevow`
 
 - [ ] Choose the production hostname for the application, such as `app.example.com`.
 - [ ] Create an A record pointing that hostname to the VPS public IPv4 address.
+- [ ] Set `APP_DOMAIN` in `.env` to that exact hostname.
 - [ ] Wait for DNS propagation.
 - [ ] Confirm the hostname resolves to the VPS before requesting HTTPS.
 - [ ] Do not expose MySQL or internal application ports through public DNS.
@@ -29,6 +31,7 @@ Upload these items to a dedicated directory such as `/opt/nitevow`:
 - [ ] `docker-compose.yml`.
 - [ ] Any required patch files, including the `patches` directory.
 - [ ] A production `.env` file, created directly on the VPS and never committed to Git.
+- [ ] Copy `.env.example` to `.env` and replace every required placeholder with real values.
 
 The repository is a pnpm-based TypeScript/Vite and Express application. Its build scripts are:
 
@@ -63,17 +66,12 @@ Never paste secrets into chat, commit them to Git, or place them in a public ima
 - [ ] Confirm the build stage installs from `pnpm-lock.yaml` with a frozen lockfile.
 - [ ] Confirm the build command completes successfully.
 - [ ] Confirm the runtime image contains `dist` and the runtime dependencies.
-- [ ] Confirm the application listens on `0.0.0.0`, not only on `localhost`.
+- [ ] Confirm the application listens on `0.0.0.0` inside the container. Traefik reaches it over the external Docker network.
 - [ ] Confirm the application port matches the Compose configuration: `3000`.
-- [ ] Confirm the runtime image has a supported way to run Drizzle migrations.
-
-Important: the current Dockerfile prunes development dependencies. Since `drizzle-kit` is a development dependency, `pnpm db:push` will not work inside the final runtime image unless the image is adjusted. Use one of these approaches:
-
-- [ ] Add a dedicated migration image or Compose migration service that retains `drizzle-kit`.
-- [ ] Run migrations from the build stage against the production database, only after confirming the database is reachable and backups exist.
-- [ ] Build a separate migration target that includes development dependencies, then start the smaller runtime image.
-
-Do not start the production app until the migration strategy is tested.
+- [ ] Confirm the image build receives `VITE_APP_ID` and `VITE_OAUTH_PORTAL_URL`; these are embedded into the client bundle at build time.
+- [ ] Confirm the image exposes the `/healthz` endpoint.
+- [ ] Confirm the Traefik router uses the correct entrypoint and certificate resolver from `.env`.
+- [ ] Use the Compose `migrate` profile for Drizzle migrations; do not run schema changes automatically on every app restart.
 
 ## 6. Build and start MySQL
 
@@ -96,7 +94,7 @@ docker compose logs --tail=100 db
 Use the selected migration strategy from step 5.
 
 - [ ] Set `DATABASE_URL` to the internal Compose address, using `db` as the hostname.
-- [ ] Run `pnpm db:push` once against the new database.
+- [ ] Run `docker compose --profile migrate run --rm migrate` once against the new database.
 - [ ] Review migration output for errors.
 - [ ] Back up the database before applying future schema changes.
 - [ ] Never use destructive schema commands against production without a backup and a rollback plan.
@@ -116,10 +114,12 @@ docker compose build --pull app
 docker compose up -d app
 docker compose ps
 docker compose logs --tail=200 app
+curl -fsS http://127.0.0.1:3000/healthz
 ```
 
 - [ ] The app container remains running.
 - [ ] The logs show the production server listening successfully.
+- [ ] `/healthz` returns HTTP 200 from the VPS.
 - [ ] The app can connect to MySQL.
 - [ ] Registration and login work.
 - [ ] A test account can be created without exposing administrative features.
@@ -127,9 +127,11 @@ docker compose logs --tail=200 app
 
 ## 9. Configure Traefik and HTTPS
 
-- [ ] Attach the app to the Traefik network already used on the VPS, or configure Traefik to watch the Compose project network.
-- [ ] Add a router for the production hostname.
-- [ ] Route traffic to the app container’s internal port `3000`.
+- [ ] Create or verify the external Traefik network: `docker network inspect traefik` or `docker network create traefik`.
+- [ ] Ensure `TRAEFIK_NETWORK` matches that network exactly.
+- [ ] Confirm the Compose labels create a router for the production hostname.
+- [ ] Route traffic to the app container’s internal port `3000` through the Compose labels.
+- [ ] Confirm the HTTP router redirects the `web` entrypoint to HTTPS and the HTTPS router uses the `websecure` entrypoint.
 - [ ] Configure the HTTPS entrypoint and ACME certificate resolver.
 - [ ] Redirect HTTP to HTTPS.
 - [ ] Add the correct production hostname to authentication callback and cookie settings.

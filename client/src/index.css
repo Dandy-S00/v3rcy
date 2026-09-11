@@ -46,7 +46,7 @@ button:disabled { cursor: not-allowed; }
 .field-label { display: block; font-size: .8rem; font-weight: 600; color: #cbd5e1; }
 
 .page-shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 72px; }
-.glass-panel { border: 1px solid rgba(255,255,255,.76); background: rgba(255,255,255,.66); box-shadow: 0 18px 60px rgba(98, 55, 117, .12), inset 0 1px rgba(255,255,255,.8); backdrop-filter: blur(20px); border-radius: 28px; }
+.glass-panel { border: 1px solid rgba(255,255,255,.76); background: rgba(255,255,255,.66); box-shadow: 0 18px 60px rgba(98, 55, 117, .12), inset 0 1px rgba(255,255,255,.8); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-radius: 28px; }
 .community-hero { display: flex; justify-content: space-between; gap: 24px; padding: clamp(28px, 6vw, 62px); background: linear-gradient(120deg, rgba(255,255,255,.75), rgba(247,220,245,.6)); }
 .community-hero h1 { max-width: 700px; margin: 8px 0; font-family: "Playfair Display", Georgia, serif; font-size: clamp(2.2rem, 7vw, 5rem); line-height: .98; letter-spacing: -.05em; }
 .muted-copy { max-width: 560px; color: hsl(var(--muted-foreground)); font-size: 1.05rem; }
