@@ -1,5 +1,6 @@
 services:
   app:
+    image: v3rya-app:prod
     build:
       context: .
       dockerfile: Dockerfile
@@ -38,7 +39,7 @@ services:
       traefik.http.routers.v3rya-http.middlewares: v3rya-https-redirect
       traefik.http.middlewares.v3rya-https-redirect.redirectscheme.scheme: https
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/readyz').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -49,14 +50,7 @@ services:
 
   migrate:
     profiles: ["migrate"]
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        VITE_APP_ID: ${VITE_APP_ID:-}
-        VITE_OAUTH_PORTAL_URL: ${VITE_OAUTH_PORTAL_URL:-}
-        VITE_MAPS_API_URL: ${VITE_MAPS_API_URL:-}
-        VITE_MAPS_API_KEY: ${VITE_MAPS_API_KEY:-}
+    image: v3rya-app:prod
     command: ["pnpm", "db:push"]
     depends_on:
       db:
