@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ reorderProfileMedia: vi.fn() }));
-vi.mock("./db", () => ({ reorderProfileMedia: mocks.reorderProfileMedia }));
+const mocks = vi.hoisted(() => ({ reorderProfileMedia: vi.fn(), getMyProfile: vi.fn().mockResolvedValue({ accountStatus: "active" }) }));
+vi.mock("./db", () => ({ reorderProfileMedia: mocks.reorderProfileMedia, getMyProfile: mocks.getMyProfile }));
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
