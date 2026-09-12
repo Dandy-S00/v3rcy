@@ -1,13 +1,42 @@
 import type { Express } from "express";
+import path from "node:path";
 import { ENV } from "./env";
+
+export function isSafeStorageKey(key: string): boolean {
+  if (!key || typeof key !== "string") return false;
+  if (key.includes("\0")) return false;
+
+  let decodedKey: string;
+  try {
+    decodedKey = decodeURIComponent(key);
+  } catch {
+    return false;
+  }
+
+  if (decodedKey.includes("\0")) return false;
+
+  const segments = decodedKey.split(/[/\\]/);
+  for (const segment of segments) {
+    if (segment === "..") return false;
+  }
+
+  const normalized = path.posix.normalize(decodedKey);
+  if (normalized.startsWith("..") || normalized === "." || normalized.includes("\0")) {
+    return false;
+  }
+
+  return true;
+}
 
 export function registerStorageProxy(app: Express) {
   app.get("/storage/*", async (req, res) => {
-    const key = (req.params as Record<string, string>)[0];
-    if (!key) {
-      res.status(400).send("Missing storage key");
+    const rawKey = (req.params as Record<string, string>)[0];
+    if (!rawKey || !isSafeStorageKey(rawKey)) {
+      res.status(400).send("Invalid storage key");
       return;
     }
+
+    const key = path.posix.normalize(decodeURIComponent(rawKey));
 
     if (!ENV.serviceApiUrl || !ENV.serviceApiKey) {
       res.status(500).send("Storage proxy not configured");
