@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import path from "path";
 import { ENV } from "./env";
 
 export function registerStorageProxy(app: Express) {
@@ -6,6 +7,12 @@ export function registerStorageProxy(app: Express) {
     const key = (req.params as Record<string, string>)[0];
     if (!key) {
       res.status(400).send("Missing storage key");
+      return;
+    }
+
+    const normalizedKey = path.normalize(key).replace(/^(\.\.[\/\\])+/, "");
+    if (key.includes("..") || normalizedKey.startsWith("..") || path.isAbsolute(key)) {
+      res.status(400).send("Invalid storage key");
       return;
     }
 
@@ -19,7 +26,7 @@ export function registerStorageProxy(app: Express) {
         "v1/storage/presign/get",
         ENV.serviceApiUrl.replace(/\/+$/, "") + "/",
       );
-      storageUrl.searchParams.set("path", key);
+      storageUrl.searchParams.set("path", normalizedKey);
 
       const storageResp = await fetch(storageUrl, {
         headers: { Authorization: `Bearer ${ENV.serviceApiKey}` },
