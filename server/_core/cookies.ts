@@ -42,7 +42,8 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    // Use Lax SameSite policy to prevent Cross-Site Request Forgery (CSRF) on state-changing requests
+    sameSite: "lax",
     secure: isSecureRequest(req),
   };
 }
