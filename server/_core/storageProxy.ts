@@ -10,8 +10,16 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    const normalizedKey = path.normalize(key).replace(/^(\.\.[\/\\])+/, "");
-    if (key.includes("..") || normalizedKey.startsWith("..") || path.isAbsolute(key)) {
+    let decodedKey = key;
+    try {
+      decodedKey = decodeURIComponent(key);
+    } catch {
+      res.status(400).send("Invalid storage key");
+      return;
+    }
+
+    const normalizedKey = path.normalize(decodedKey).replace(/^(\.\.[\/\\])+/, "");
+    if (decodedKey.includes("..") || normalizedKey.startsWith("..") || path.isAbsolute(decodedKey)) {
       res.status(400).send("Invalid storage key");
       return;
     }
