@@ -21,6 +21,12 @@ function originFor(req: express.Request) { return `${req.protocol}://${req.get("
 
 async function startServer() {
   const app = express(); const server = createServer(app);
+  app.use((_req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    next();
+  });
   app.use(express.json({ limit: "50mb" })); app.use(express.urlencoded({ limit: "50mb", extended: true })); registerStorageProxy(app); registerOAuthRoutes(app);
   app.get("/healthz", async (_req, res) => { const dbHealthy = await isDatabaseHealthy(); return res.status(dbHealthy ? 200 : 503).json({ status: dbHealthy ? "ok" : "degraded", database: dbHealthy ? "connected" : "unavailable" }); });
   app.get("/readyz", async (_req, res) => { const dbHealthy = await isDatabaseHealthy(); return res.status(dbHealthy ? 200 : 503).json({ status: dbHealthy ? "ready" : "not_ready", database: dbHealthy ? "connected" : "unavailable" }); });
