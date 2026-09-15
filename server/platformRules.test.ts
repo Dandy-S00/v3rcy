@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { canPublishInCategory, isCityLevelLocation } from "../shared/platformRules";
+import {
+  canPublishInCategory,
+  isCityLevelLocation,
+} from "../shared/platformRules";
 
 describe("NiteVow publication rules", () => {
   it("requires ID verification for companionship listings", () => {
