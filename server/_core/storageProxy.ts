@@ -11,7 +11,11 @@ export function registerStorageProxy(app: Express) {
     }
 
     const normalizedKey = path.normalize(key).replace(/^(\.\.[\/\\])+/, "");
-    if (key.includes("..") || normalizedKey.startsWith("..") || path.isAbsolute(key)) {
+    if (
+      key.includes("..") ||
+      normalizedKey.startsWith("..") ||
+      path.isAbsolute(key)
+    ) {
       res.status(400).send("Invalid storage key");
       return;
     }
@@ -24,7 +28,7 @@ export function registerStorageProxy(app: Express) {
     try {
       const storageUrl = new URL(
         "v1/storage/presign/get",
-        ENV.serviceApiUrl.replace(/\/+$/, "") + "/",
+        ENV.serviceApiUrl.replace(/\/+$/, "") + "/"
       );
       storageUrl.searchParams.set("path", normalizedKey);
 
@@ -34,7 +38,9 @@ export function registerStorageProxy(app: Express) {
 
       if (!storageResp.ok) {
         const body = await storageResp.text().catch(() => "");
-        console.error(`[StorageProxy] backend error: ${storageResp.status} ${body}`);
+        console.error(
+          `[StorageProxy] backend error: ${storageResp.status} ${body}`
+        );
         res.status(502).send("Storage backend error");
         return;
       }

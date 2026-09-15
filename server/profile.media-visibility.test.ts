@@ -19,18 +19,16 @@ const context = {
 
 describe("profile.get media visibility", () => {
   beforeEach(() =>
-    mocks.getPublicProfile
-      .mockReset()
-      .mockResolvedValue({
-        userId: 2,
-        displayName: "Member",
-        age: 29,
-        city: "Austin",
-        preferences: [],
-        verificationStatus: "email",
-        bio: null,
-        createdAt: new Date(),
-      })
+    mocks.getPublicProfile.mockReset().mockResolvedValue({
+      userId: 2,
+      displayName: "Member",
+      age: 29,
+      city: "Austin",
+      preferences: [],
+      verificationStatus: "email",
+      bio: null,
+      createdAt: new Date(),
+    })
   );
   it("returns only the server-provided public media collection for a member profile", async () => {
     mocks.getPublicProfileMedia.mockResolvedValue([

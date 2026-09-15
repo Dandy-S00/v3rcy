@@ -23,7 +23,9 @@ import Home from "./pages/Home";
 function Router() {
   const [location] = useLocation();
   const reduceMotion = useReducedMotion();
-  const transition = reduceMotion ? { duration: 0 } : { duration: 0.22, ease: "circOut" as const };
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.22, ease: "circOut" as const };
 
   return (
     <AnimatePresence mode="wait" initial={false}>
