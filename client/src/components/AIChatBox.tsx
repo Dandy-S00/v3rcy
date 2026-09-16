@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Loader2, Send, User, Sparkles } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -213,7 +214,8 @@ export function AIChatBox({
                       key={index}
                       onClick={() => onSendMessage(prompt)}
                       disabled={isLoading}
-                      className="rounded-lg border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={`Send prompt: ${prompt}`}
+                      className="rounded-lg border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {prompt}
                     </button>
@@ -314,21 +316,30 @@ export function AIChatBox({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
+          aria-label="Chat message"
           className="flex-1 max-h-32 resize-none min-h-9"
           rows={1}
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!input.trim() || isLoading}
-          className="shrink-0 h-[38px] w-[38px]"
-        >
-          {isLoading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Send className="size-4" />
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="submit"
+              size="icon"
+              aria-label={isLoading ? "Sending message" : "Send message"}
+              disabled={!input.trim() || isLoading}
+              className="shrink-0 h-[38px] w-[38px]"
+            >
+              {isLoading ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            {isLoading ? "Sending message..." : "Send message"}
+          </TooltipContent>
+        </Tooltip>
       </form>
     </div>
   );
