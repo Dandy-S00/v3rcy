@@ -114,7 +114,7 @@ export const moderationActions = mysqlTable("moderationActions", {
 export const actionRateLimits = mysqlTable("actionRateLimits", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
-  actionType: mysqlEnum("actionType", ["listing", "message", "report", "safety", "upload"]).notNull(),
+  actionType: mysqlEnum("actionType", ["listing", "message", "report", "safety", "media_upload"]).notNull(),
   windowStartedAt: timestamp("windowStartedAt").notNull(),
   actionCount: int("actionCount").default(0).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

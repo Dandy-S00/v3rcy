@@ -2,7 +2,7 @@ import { and, desc, eq, ne } from "drizzle-orm";
 import { actionRateLimits, moderationActions, safetySignals, userProfiles, users } from "../drizzle/schema";
 import { getDb } from "./db";
 
-export type LimitedAction = "listing" | "message" | "report" | "safety" | "upload";
+export type LimitedAction = "listing" | "message" | "report" | "safety" | "media_upload";
 export type AccountStatus = "active" | "review" | "suspended";
 
 export function nextRateLimitState(input: { existing: { actionCount: number; windowStartedAt: Date } | undefined; maximum: number; now: Date; windowMs: number }) {

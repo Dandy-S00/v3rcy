@@ -6,9 +6,7 @@ import * as db from "./db";
 import { COOKIE_NAME } from "../shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-
-const adminProcedure = protectedProcedure.use(({ ctx, next }) => { if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Restricted workspace" }); return next(); });
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 const limitAction = async (userId: number, actionType: controls.LimitedAction, maximum: number) => { if (!await controls.consumeActionLimit({ userId, actionType, maximum })) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `Please pause before taking further ${actionType} actions.` }); };
 const profileInput = z.object({ displayName: z.string().trim().max(48).optional().nullable(), bio: z.string().trim().max(1200).optional().nullable(), age: z.number().int().min(18).max(99), city: z.string().trim().min(2).max(80).refine(isCityLevelLocation, "Use a city or metro area only; do not enter a street address or coordinates."), preferences: z.array(z.string().trim().min(1).max(40)).max(12) });
 
