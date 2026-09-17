@@ -10,6 +10,7 @@ import MemberProfile from "@/pages/MemberProfile";
 import PostListing from "@/pages/PostListing";
 import Profile from "@/pages/Profile";
 import ReportListing from "@/pages/ReportListing";
+import ComponentShowcase from "@/pages/ComponentShowcase";
 import SafetyCenter from "@/pages/SafetyCenter";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,6 +48,7 @@ function Router() {
           <Route path="/report/listing/:id" component={ReportListing} />
           <Route path="/safety" component={SafetyCenter} />
           <Route path="/studio" component={AdminStudio} />
+          <Route path="/showcase" component={ComponentShowcase} />
           <Route path="/404" component={NotFound} />
           <Route component={NotFound} />
         </Switch>
