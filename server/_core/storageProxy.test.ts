@@ -1,69 +1,107 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import express from "express";
 import { registerStorageProxy } from "./storageProxy";
 import { ENV } from "./env";
 
-vi.mock("./env", () => ({
-  ENV: {
-    serviceApiUrl: "http://storage.internal",
-    serviceApiKey: "test-api-key",
-  },
-}));
+function createMockReqRes(pathParam: string) {
+  const req = {
+    params: { "0": pathParam },
+  } as unknown as express.Request;
 
-describe("storageProxy path traversal protection", () => {
-  let app: express.Express;
+  const res = {
+    statusCode: 200,
+    body: "",
+    headers: {} as Record<string, string>,
+    status(code: number) {
+      this.statusCode = code;
+      return this;
+    },
+    send(msg: string) {
+      this.body = msg;
+      return this;
+    },
+    set(key: string, val: string) {
+      this.headers[key] = val;
+      return this;
+    },
+    redirect(code: number, url: string) {
+      this.statusCode = code;
+      this.headers["location"] = url;
+      return this;
+    },
+  } as unknown as express.Response & { statusCode: number; body: string; headers: Record<string, string> };
 
-  beforeEach(() => {
-    app = express();
+  return { req, res };
+}
+
+describe("storageProxy path validation", () => {
+  it("rejects path traversal attempts with 400 Bad Request", async () => {
+    let handler: (req: express.Request, res: express.Response) => Promise<void> = async () => {};
+    const app = {
+      get: (_path: string, fn: any) => {
+        handler = fn;
+      },
+    } as unknown as express.Express;
+
     registerStorageProxy(app);
+
+    const { req: req1, res: res1 } = createMockReqRes("../secret.txt");
+    await handler(req1, res1);
+    expect(res1.statusCode).toBe(400);
+    expect(res1.body).toBe("Invalid storage key");
+
+    const { req: req2, res: res2 } = createMockReqRes("profile-media/1/../../secret.txt");
+    await handler(req2, res2);
+    expect(res2.statusCode).toBe(400);
+    expect(res2.body).toBe("Invalid storage key");
+
+    const { req: req3, res: res3 } = createMockReqRes("profile-media/1/%2e%2e/secret.txt");
+    await handler(req3, res3);
+    expect(res3.statusCode).toBe(400);
+    expect(res3.body).toBe("Invalid storage key");
+
+    const { req: req4, res: res4 } = createMockReqRes("profile-media/1/%252e%252e/secret.txt");
+    await handler(req4, res4);
+    expect(res4.statusCode).toBe(400);
+    expect(res4.body).toBe("Invalid storage key");
+
+    const { req: req5, res: res5 } = createMockReqRes("profile-media/1/%FF/secret.txt");
+    await handler(req5, res5);
+    expect(res5.statusCode).toBe(400);
+    expect(res5.body).toBe("Invalid storage key");
+
+    const { req: req6, res: res6 } = createMockReqRes("profile-media/1/photo.jpg%00.png");
+    await handler(req6, res6);
+    expect(res6.statusCode).toBe(400);
+    expect(res6.body).toBe("Invalid storage key");
   });
 
-  const makeMockRes = () => {
-    const res: any = {};
-    res.statusCode = 200;
-    res.status = vi.fn((code: number) => {
-      res.statusCode = code;
-      return res;
-    });
-    res.send = vi.fn().mockReturnValue(res);
-    res.set = vi.fn().mockReturnValue(res);
-    res.redirect = vi.fn().mockReturnValue(res);
-    return res;
-  };
+  it("handles valid storage keys", async () => {
+    ENV.serviceApiUrl = "https://example.com/api";
+    ENV.serviceApiKey = "test-key";
 
-  it("rejects path traversal attempts with '..'", async () => {
-    const routeHandler = (app as any)._router.stack.find((layer: any) => layer.route?.path === "/storage/*").route.stack[0].handle;
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ url: "https://s3.example.com/presigned-url" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
 
-    const req: any = { params: { "0": "../etc/passwd" } };
-    const res = makeMockRes();
+    let handler: (req: express.Request, res: express.Response) => Promise<void> = async () => {};
+    const app = {
+      get: (_path: string, fn: any) => {
+        handler = fn;
+      },
+    } as unknown as express.Express;
 
-    await routeHandler(req, res);
+    registerStorageProxy(app);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith("Invalid storage key");
-  });
+    const { req, res } = createMockReqRes("profile-media/1/photo.jpg");
+    await handler(req, res);
 
-  it("rejects encoded path traversal attempts", async () => {
-    const routeHandler = (app as any)._router.stack.find((layer: any) => layer.route?.path === "/storage/*").route.stack[0].handle;
+    expect(res.statusCode).toBe(307);
+    expect(res.headers["location"]).toBe("https://s3.example.com/presigned-url");
 
-    const req: any = { params: { "0": "foo/..%2f..%2fsecret.txt" } };
-    const res = makeMockRes();
-
-    await routeHandler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith("Invalid storage key");
-  });
-
-  it("rejects null byte injection in key", async () => {
-    const routeHandler = (app as any)._router.stack.find((layer: any) => layer.route?.path === "/storage/*").route.stack[0].handle;
-
-    const req: any = { params: { "0": "valid/key.png\0.php" } };
-    const res = makeMockRes();
-
-    await routeHandler(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.send).toHaveBeenCalledWith("Invalid storage key");
+    fetchSpy.mockRestore();
   });
 });
