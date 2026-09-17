@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { getApprovedListingIds, createProfileMedia, getMyProfile, getProfileMedia, getDb } from "../db";
+import { consumeActionLimit } from "../platformControls";
 import { buildSitemapXml } from "./sitemap";
 import { storagePut } from "../storage";
 import { getProfileMediaKind, hasProfileMediaAttestation, hasValidProfileMediaSignature, MAX_PROFILE_MEDIA_BYTES } from "../mediaRules";
