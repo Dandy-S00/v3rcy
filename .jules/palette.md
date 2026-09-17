@@ -1,3 +1,3 @@
-## 2025-05-18 - Messaging Keyboard Navigation & Accessible Action Buttons
-**Learning:** Icon-only action buttons in messaging interfaces require explicit `aria-label` updates during loading states (e.g., "Send message" -> "Sending message") and paired keyboard shortcuts (like Ctrl/Cmd+Enter) with clear placeholder hints to ensure accessibility and efficient desktop interaction.
-**Action:** Always provide explicit accessible labels and keyboard shortcut hints on multi-line text input fields with icon buttons.
+## 2025-02-23 - Icon-Only Action Buttons in Interactive Components
+**Learning:** Icon-only action buttons (such as chat send buttons) lack implicit text for screen readers and visual hints for sighted users.
+**Action:** Always wrap icon-only action buttons in Radix UI Tooltips and provide explicit `aria-label` attributes reflecting the current dynamic state (e.g., sending vs send).
