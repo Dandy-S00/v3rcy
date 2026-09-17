@@ -1,4 +1,4 @@
-import { LockKeyhole, MessageCircle, Send } from "lucide-react";
+import { Loader2, LockKeyhole, MessageCircle, Send } from "lucide-react";
 import { useMemo, useState } from "react";
 import SiteHeader from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
