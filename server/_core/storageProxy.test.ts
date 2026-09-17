@@ -69,6 +69,11 @@ describe("storageProxy path validation", () => {
     await handler(req5, res5);
     expect(res5.statusCode).toBe(400);
     expect(res5.body).toBe("Invalid storage key");
+
+    const { req: req6, res: res6 } = createMockReqRes("profile-media/1/photo.jpg%00.png");
+    await handler(req6, res6);
+    expect(res6.statusCode).toBe(400);
+    expect(res6.body).toBe("Invalid storage key");
   });
 
   it("handles valid storage keys", async () => {

@@ -24,6 +24,8 @@ export function registerStorageProxy(app: Express) {
 
     const normalizedKey = path.normalize(decodedKey).replace(/^(\.\.[\/\\])+/, "");
     if (
+      key.includes("\0") ||
+      decodedKey.includes("\0") ||
       key.includes("..") ||
       decodedKey.includes("..") ||
       normalizedKey.startsWith("..") ||
