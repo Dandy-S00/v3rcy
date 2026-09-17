@@ -43,6 +43,25 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
+    let decodedKey = rawKey;
+    try {
+      decodedKey = decodeURIComponent(rawKey);
+    } catch {
+      res.status(400).send("Invalid storage key encoding");
+      return;
+    }
+
+    if (decodedKey.includes("\0")) {
+      res.status(400).send("Invalid storage key");
+      return;
+    }
+
+    const normalizedKey = path.posix.normalize(decodedKey).replace(/^(\/|\\)+/, "");
+    if (normalizedKey.startsWith("..") || normalizedKey.includes("../") || normalizedKey === "..") {
+      res.status(400).send("Invalid storage key");
+      return;
+    }
+
     if (!ENV.serviceApiUrl || !ENV.serviceApiKey) {
       res.status(500).send("Storage proxy not configured");
       return;
