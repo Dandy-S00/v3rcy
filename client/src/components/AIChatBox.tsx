@@ -214,7 +214,7 @@ export function AIChatBox({
                       key={index}
                       type="button"
                       onClick={() => onSendMessage(prompt)}
-                      disabled={misLoading}
+                      disabled={isLoading}
                       aria-label={`Send prompt: ${prompt}`}
                       className="rounded-lg border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
@@ -323,22 +323,34 @@ export function AIChatBox({
         />
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button
-              type="submit"
-              size="icon"
-              aria-label={isLoading ? "Sending message" : "Send message"}
-              disabled={!input.trim() || isLoading}
-              className="shrink-0 h-[38px] w-[38px]"
-            >
-              {isLoading ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
-              )}
-            </Button>
+            <span className="inline-block">
+              <Button
+                type="submit"
+                size="icon"
+                aria-label={
+                  isLoading
+                    ? "Sending message"
+                    : !input.trim()
+                    ? "Type a message to enable send"
+                    : "Send message"
+                }
+                disabled={!input.trim() || isLoading}
+                className="shrink-0 h-[38px] w-[38px]"
+              >
+                {isLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+              </Button>
+            </span>
           </TooltipTrigger>
           <TooltipContent side="top">
-            {isLoading ? "Sending message..." : "Send message"}
+            {isLoading
+              ? "Sending message..."
+              : !input.trim()
+              ? "Enter a message to send"
+              : "Send message (Enter)"}
           </TooltipContent>
         </Tooltip>
       </form>
