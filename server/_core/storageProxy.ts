@@ -13,7 +13,7 @@ export function registerStorageProxy(app: Express) {
   app.get("/storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
     if (!key || !isValidStorageKey(key)) {
-      res.status(400).send("Invalid or missing storage key");
+      res.status(400).send("Invalid storage key");
       return;
     }
 
@@ -29,35 +29,18 @@ export function registerStorageProxy(app: Express) {
       return;
     }
 
-    const normalizedKey = path.normalize(decodedKey).replace(/^(\.\.[\/\\])+/, "");
+    const normalizedKey = path.posix.normalize(decodedKey).replace(/^(\/|\\)+/, "");
     if (
       key.includes("\0") ||
       decodedKey.includes("\0") ||
       key.includes("..") ||
       decodedKey.includes("..") ||
       normalizedKey.startsWith("..") ||
+      normalizedKey.includes("../") ||
+      normalizedKey === ".." ||
       path.isAbsolute(key) ||
       path.isAbsolute(decodedKey)
     ) {
-      res.status(400).send("Invalid storage key");
-      return;
-    }
-
-    let decodedKey = rawKey;
-    try {
-      decodedKey = decodeURIComponent(rawKey);
-    } catch {
-      res.status(400).send("Invalid storage key encoding");
-      return;
-    }
-
-    if (decodedKey.includes("\0")) {
-      res.status(400).send("Invalid storage key");
-      return;
-    }
-
-    const normalizedKey = path.posix.normalize(decodedKey).replace(/^(\/|\\)+/, "");
-    if (normalizedKey.startsWith("..") || normalizedKey.includes("../") || normalizedKey === "..") {
       res.status(400).send("Invalid storage key");
       return;
     }
