@@ -72,6 +72,17 @@ describe("Security & Best Practices", () => {
       expect(mocks.deleteProfileMedia).not.toHaveBeenCalled();
     });
 
+    it("blocks suspended accounts from updating media options", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.profile.updateMedia({ mediaId: 5, visibility: "hidden" })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
     it("allows active accounts to update profile", async () => {
       mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
       mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
