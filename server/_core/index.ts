@@ -13,7 +13,6 @@ import { consumeActionLimit } from "../platformControls";
 import { buildSitemapXml } from "./sitemap";
 import { storagePut } from "../storage";
 import { getProfileMediaKind, hasProfileMediaAttestation, hasValidProfileMediaSignature, MAX_PROFILE_MEDIA_BYTES } from "../mediaRules";
-import { consumeActionLimit } from "../platformControls";
 import { sql } from "drizzle-orm";
 
 function isPortAvailable(port: number): Promise<boolean> { return new Promise(resolve => { const server = net.createServer(); server.listen(port, () => { server.close(() => resolve(true)); }); server.on("error", () => resolve(false)); }); }
