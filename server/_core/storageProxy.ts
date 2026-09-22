@@ -31,6 +31,7 @@ export function registerStorageProxy(app: Express) {
 
     const normalizedKey = path.posix.normalize(decodedKey).replace(/^(\/|\\)+/, "");
     if (
+      !normalizedKey ||
       key.includes("\0") ||
       decodedKey.includes("\0") ||
       key.includes("..") ||
@@ -38,8 +39,10 @@ export function registerStorageProxy(app: Express) {
       normalizedKey.startsWith("..") ||
       normalizedKey.includes("../") ||
       normalizedKey === ".." ||
-      path.isAbsolute(key) ||
-      path.isAbsolute(decodedKey)
+      path.posix.isAbsolute(key) ||
+      path.win32.isAbsolute(key) ||
+      path.posix.isAbsolute(decodedKey) ||
+      path.win32.isAbsolute(decodedKey)
     ) {
       res.status(400).send("Invalid storage key");
       return;

@@ -12,3 +12,7 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Cross-Platform Path Traversal & Safety Account Enforcement
+**Vulnerability:** `path.isAbsolute()` on Linux hosts evaluates Windows UNC or drive-letter paths as relative, and `safety.signal`/`safety.report` omitted account status checks.
+**Learning:** Always check both `path.posix.isAbsolute` and `path.win32.isAbsolute` for cross-platform path validation, and apply `ensureActiveAccount` across all state-modifying endpoints.
