@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-07 - Application ID Validation Gap in JWT Session Verification
+**Vulnerability:** `sdk.verifySession()` extracted `appId` from JWT payloads but did not validate `appId === ENV.appId`, allowing cross-application token reuse across multi-tenant auth setups.
+**Learning:** Checking payload structural existence (`isNonEmptyString`) is insufficient for JWT claims; tenant and application identifiers must be matched against expected system environment configs.
+**Prevention:** Always verify `payload.appId === ENV.appId` during session verification when `ENV.appId` is configured.

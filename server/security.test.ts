@@ -22,6 +22,8 @@ vi.mock("./platformControls", () => ({
 import { appRouter } from "./routers";
 import { isValidStorageKey } from "./_core/storageProxy";
 import { getSessionCookieOptions, isSecureRequest } from "./_core/cookies";
+import { sdk } from "./_core/sdk";
+import { ENV } from "./_core/env";
 import type { Request } from "express";
 import type { TrpcContext } from "./_core/context";
 
@@ -145,6 +147,36 @@ describe("Security & Best Practices", () => {
         headers: { "x-forwarded-proto": "https" },
       } as unknown as Request;
       expect(isSecureRequest(forwardedHttpsReq)).toBe(true);
+    });
+  });
+
+  describe("Session Verification AppId Enforcement", () => {
+    it("rejects session tokens signed with a different appId", async () => {
+      const originalAppId = ENV.appId;
+      try {
+        (ENV as any).appId = "app-target-123";
+
+        const validToken = await sdk.signSession({
+          openId: "user-123",
+          appId: "app-target-123",
+          name: "Test User",
+        });
+
+        const invalidAppIdToken = await sdk.signSession({
+          openId: "user-123",
+          appId: "app-other-999",
+          name: "Test User",
+        });
+
+        const validResult = await sdk.verifySession(validToken);
+        expect(validResult).not.toBeNull();
+        expect(validResult?.openId).toBe("user-123");
+
+        const invalidResult = await sdk.verifySession(invalidAppIdToken);
+        expect(invalidResult).toBeNull();
+      } finally {
+        (ENV as any).appId = originalAppId;
+      }
     });
   });
 });
