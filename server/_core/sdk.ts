@@ -159,7 +159,7 @@ class SDKServer {
   }
 
   private getSessionSecret() {
-    const secret = ENV.cookieSecret;
+    const secret = ENV.cookieSecret || "default-jwt-secret-key-for-development-and-testing-only";
     return new TextEncoder().encode(secret);
   }
 
@@ -222,6 +222,11 @@ class SDKServer {
         !isNonEmptyString(name)
       ) {
         console.warn("[Auth] Session payload missing required fields");
+        return null;
+      }
+
+      if (ENV.appId && appId !== ENV.appId) {
+        console.warn("[Auth] Session appId mismatch:", appId, "vs expected:", ENV.appId);
         return null;
       }
 
