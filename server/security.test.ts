@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +14,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -22,6 +24,8 @@ vi.mock("./platformControls", () => ({
 import { appRouter } from "./routers";
 import { isValidStorageKey } from "./_core/storageProxy";
 import { getSessionCookieOptions, isSecureRequest } from "./_core/cookies";
+import { storageGet, storageGetSignedUrl } from "./storage";
+import { TRPCError } from "@trpc/server";
 import type { Request } from "express";
 import type { TrpcContext } from "./_core/context";
 
@@ -101,7 +105,7 @@ describe("Security & Best Practices", () => {
     });
   });
 
-  describe("Storage Proxy Path Traversal Guard", () => {
+  describe("Storage Key Validation & Helper Safety", () => {
     it("allows valid relative storage keys", () => {
       expect(isValidStorageKey("profile-media/123/image.png")).toBe(true);
       expect(isValidStorageKey("avatars/user_456.jpg")).toBe(true);
@@ -116,6 +120,28 @@ describe("Security & Best Practices", () => {
       expect(isValidStorageKey("file\0name.png")).toBe(false);
       expect(isValidStorageKey("file name.png")).toBe(false);
       expect(isValidStorageKey("")).toBe(false);
+    });
+
+    it("throws an error when storageGet or storageGetSignedUrl receives a traversal key", async () => {
+      await expect(storageGet("../secret.txt")).rejects.toThrow("Invalid storage key");
+      await expect(storageGetSignedUrl("profile-media/../../etc/passwd")).rejects.toThrow("Invalid storage key");
+    });
+  });
+
+  describe("Messaging Authorization Guard", () => {
+    it("bubbles FORBIDDEN TRPCError when conversation access is denied", async () => {
+      mocks.getConversationMessages.mockRejectedValueOnce(
+        new TRPCError({ code: "FORBIDDEN", message: "Conversation access denied" })
+      );
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(
+        caller.messaging.messages({ conversationId: 999 })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
     });
   });
 
