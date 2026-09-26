@@ -12,7 +12,7 @@ export function isValidStorageKey(key: string): boolean {
 export function registerStorageProxy(app: Express) {
   app.get("/storage/*", async (req, res) => {
     const key = (req.params as Record<string, string>)[0];
-    if (!key || !isValidStorageKey(key)) {
+    if (!key) {
       res.status(400).send("Invalid storage key");
       return;
     }
@@ -31,6 +31,7 @@ export function registerStorageProxy(app: Express) {
 
     const normalizedKey = path.posix.normalize(decodedKey).replace(/^(\/|\\)+/, "");
     if (
+      !isValidStorageKey(decodedKey) ||
       key.includes("\0") ||
       decodedKey.includes("\0") ||
       key.includes("..") ||

@@ -3,6 +3,7 @@
 // Downloads return /storage/{key} paths served via 307 redirect.
 
 import { ENV } from "./_core/env";
+import { isValidStorageKey } from "./_core/storageProxy";
 
 function getStorageConfig() {
   const serviceUrl = ENV.serviceApiUrl;
@@ -18,7 +19,11 @@ function getStorageConfig() {
 }
 
 function normalizeKey(relKey: string): string {
-  return relKey.replace(/^\/+/, "");
+  const key = relKey.replace(/^\/+/, "");
+  if (!isValidStorageKey(key)) {
+    throw new Error("Invalid storage key");
+  }
+  return key;
 }
 
 function appendHashSuffix(relKey: string): string {
@@ -77,8 +82,8 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
 }
 
 export async function storageGetSignedUrl(relKey: string): Promise<string> {
-  const { serviceUrl, serviceKey } = getStorageConfig();
   const key = normalizeKey(relKey);
+  const { serviceUrl, serviceKey } = getStorageConfig();
 
   const getUrl = new URL("v1/storage/presign/get", serviceUrl + "/");
   getUrl.searchParams.set("path", key);
