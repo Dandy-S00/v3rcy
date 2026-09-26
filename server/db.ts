@@ -39,7 +39,7 @@ export async function getMyProfile(userId: number) {
 export async function getPublicProfile(userId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  return (await db.select({ userId: userProfiles.userId, displayName: userProfiles.displayName, bio: userProfiles.bio, age: userProfiles.age, city: userProfiles.city, preferences: userProfiles.preferences, verificationStatus: userProfiles.verificationStatus, createdAt: userProfiles.createdAt }).from(userProfiles).where(eq(userProfiles.userId, userId)).limit(1))[0];
+  return (await db.select({ userId: userProfiles.userId, displayName: userProfiles.displayName, bio: userProfiles.bio, age: userProfiles.age, city: userProfiles.city, preferences: userProfiles.preferences, verificationStatus: userProfiles.verificationStatus, createdAt: userProfiles.createdAt }).from(userProfiles).where(and(eq(userProfiles.userId, userId), eq(userProfiles.accountStatus, "active"))).limit(1))[0];
 }
 
 export async function getProfileMedia(userId: number) {

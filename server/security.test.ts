@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getMyProfile: vi.fn(),
+  getPublicProfile: vi.fn(),
+  getPublicProfileMedia: vi.fn(),
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
@@ -10,6 +12,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("./db", () => ({
   getMyProfile: mocks.getMyProfile,
+  getPublicProfile: mocks.getPublicProfile,
+  getPublicProfileMedia: mocks.getPublicProfileMedia,
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
@@ -98,6 +102,16 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("returns null for profile.get when public profile is undefined (e.g. suspended)", async () => {
+      mocks.getPublicProfile.mockResolvedValueOnce(undefined);
+
+      const caller = appRouter.createCaller(makeContext(null));
+      const result = await caller.profile.get({ userId: 99 });
+
+      expect(mocks.getPublicProfile).toHaveBeenCalledWith(99);
+      expect(result).toBeNull();
     });
   });
 
