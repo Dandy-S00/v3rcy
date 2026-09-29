@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +15,8 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -98,6 +102,53 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended accounts from sending safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({ subjectUserId: 10, signalType: "safety_alert" })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from filing reports", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.report({
+          subjectUserId: 10,
+          category: "harassment",
+          detail: "Detailed report description here.",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createReport).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Messaging Authorization", () => {
+    it("returns FORBIDDEN TRPCError when conversation access is denied", async () => {
+      mocks.getConversationMessages.mockRejectedValueOnce(new Error("Conversation access denied"));
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.messaging.messages({ conversationId: 999 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
     });
   });
 
