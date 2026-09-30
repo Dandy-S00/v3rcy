@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-07 - Exception Error Leakage in Express REST Endpoints
+**Vulnerability:** Uncaught internal exceptions in standalone Express REST endpoints (`POST /api/profile-media`) returned raw `error.message` with HTTP status 400, leaking internal storage backend and database errors to clients.
+**Learning:** Standalone Express REST endpoints outside tRPC do not automatically sanitize exception messages, exposing internal system details when downstream operations fail.
+**Prevention:** Catch unhandled exceptions in Express endpoints, log the error on the server via `console.error`, and return HTTP 500 with a safe generic error response.

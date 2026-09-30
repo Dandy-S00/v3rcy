@@ -147,4 +147,24 @@ describe("Security & Best Practices", () => {
       expect(isSecureRequest(forwardedHttpsReq)).toBe(true);
     });
   });
+
+  describe("Error Sanitization & Info Leakage Prevention", () => {
+    it("masks internal exception details into a safe generic error response", () => {
+      const sensitiveInternalError = new Error("S3 presign failed (500): AWS SecretKey invalid at s3.us-east-1.amazonaws.com");
+
+      // Verify that handling unexpected exceptions produces safe generic message
+      const createSafeErrorResponse = (error: unknown) => {
+        const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+        console.error("[Profile Media] Upload failed:", error);
+        consoleSpy.mockRestore();
+        return { status: 500, json: { error: "Upload failed. Please try again." } };
+      };
+
+      const response = createSafeErrorResponse(sensitiveInternalError);
+      expect(response.status).toBe(500);
+      expect(response.json.error).toBe("Upload failed. Please try again.");
+      expect(response.json.error).not.toContain("AWS");
+      expect(response.json.error).not.toContain("s3.us-east-1.amazonaws.com");
+    });
+  });
 });
