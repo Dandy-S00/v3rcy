@@ -83,6 +83,17 @@ describe("Security & Best Practices", () => {
       });
     });
 
+    it("blocks suspended accounts from reordering media items", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.profile.reorderMedia({ mediaIds: [10, 11] })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
     it("allows active accounts to update profile", async () => {
       mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
       mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
