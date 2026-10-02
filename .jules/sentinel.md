@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Public Profile Data Leakage for Suspended Accounts
+**Vulnerability:** Public profile and media retrieval helper queries (`getPublicProfile`, `getPublicProfileMedia`) did not filter by `accountStatus === "active"`, leaving suspended and restricted members' profiles and media publicly exposed via `profile.get`.
+**Learning:** Checking account status only during write/mutation procedures is insufficient if read procedures query `userProfiles` directly without enforcing active account status filtering.
+**Prevention:** Always include `eq(userProfiles.accountStatus, "active")` in database queries intended for public profile consumption.

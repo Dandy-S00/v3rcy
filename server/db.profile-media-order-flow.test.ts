@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 type Media = { id: number; userId: number; storageKey: string; url: string; mediaType: "image" | "video"; mimeType: string; caption: null; visibility: "public" | "hidden"; isFeatured: boolean; sortOrder: number; createdAt: Date };
 const state = vi.hoisted(() => ({ media: [] as Media[], nextId: 20, deletedId: 0, updateTargets: [] as number[] }));
 const sorted = () => [...state.media].sort((left, right) => left.sortOrder - right.sortOrder || right.createdAt.getTime() - left.createdAt.getTime()).map(item => ({ ...item }));
-const selection = () => ({ orderBy: () => Promise.resolve(sorted()), then: <T>(resolve: (value: Media[]) => T, reject?: (reason: unknown) => T) => Promise.resolve(sorted()).then(resolve, reject) });
+const selection = () => ({ limit: () => Promise.resolve([{ userId: 4, accountStatus: "active" }]), orderBy: () => Promise.resolve(sorted()), then: <T>(resolve: (value: Media[]) => T, reject?: (reason: unknown) => T) => Promise.resolve(sorted()).then(resolve, reject) });
 
 vi.mock("drizzle-orm/mysql2", () => ({ drizzle: () => ({
   select: () => ({ from: () => ({ where: () => selection() }) }),
