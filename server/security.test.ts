@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  getInbox: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +15,8 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  getInbox: mocks.getInbox,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -83,6 +87,32 @@ describe("Security & Best Practices", () => {
       });
     });
 
+    it("blocks suspended accounts from querying inbox", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.messaging.inbox()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.getInbox).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from querying conversation messages", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.messaging.messages({ conversationId: 10 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.getConversationMessages).not.toHaveBeenCalled();
+    });
+
     it("allows active accounts to update profile", async () => {
       mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
       mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
@@ -116,6 +146,23 @@ describe("Security & Best Practices", () => {
       expect(isValidStorageKey("file\0name.png")).toBe(false);
       expect(isValidStorageKey("file name.png")).toBe(false);
       expect(isValidStorageKey("")).toBe(false);
+    });
+  });
+
+  describe("Messaging Authorization", () => {
+    it("rejects message requests with FORBIDDEN when user is not a conversation participant", async () => {
+      const { TRPCError } = await import("@trpc/server");
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
+      mocks.getConversationMessages.mockRejectedValueOnce(
+        new TRPCError({ code: "FORBIDDEN", message: "Conversation access denied" })
+      );
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.messaging.messages({ conversationId: 999 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
     });
   });
 
