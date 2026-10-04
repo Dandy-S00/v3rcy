@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +14,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -98,6 +100,40 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended accounts from sending safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({ subjectUserId: 10, signalType: "safety_alert" })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from filing safety reports", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.report({
+          subjectUserId: 10,
+          category: "harassment",
+          detail: "Detailed harassment report content.",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createReport).not.toHaveBeenCalled();
     });
   });
 
