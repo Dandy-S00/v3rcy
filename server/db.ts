@@ -133,7 +133,13 @@ export async function getListings(input: { category?: ListingCategory; city?: st
   const conditions = [eq(listings.visibility, "live")];
   if (input.category) conditions.push(eq(listings.category, input.category));
   if (input.city) conditions.push(eq(listings.city, input.city));
-  if (input.query) { const term = `%${input.query.trim()}%`; conditions.push(or(like(listings.title, term), like(listings.description, term))!); }
+  if (input.query) {
+    const sanitizedQuery = input.query.trim().replace(/[%_\\]/g, "\\$&");
+    if (sanitizedQuery.length > 0) {
+      const term = `%${sanitizedQuery}%`;
+      conditions.push(or(like(listings.title, term), like(listings.description, term))!);
+    }
+  }
   return db.select({ id: listings.id, ownerUserId: listings.ownerUserId, title: listings.title, description: listings.description, category: listings.category, city: listings.city, verificationRequired: listings.verificationRequired, moderationStatus: listings.moderationStatus, publishedAt: listings.publishedAt, displayName: userProfiles.displayName, verificationStatus: userProfiles.verificationStatus }).from(listings).leftJoin(userProfiles, eq(listings.ownerUserId, userProfiles.userId)).where(and(...conditions)).orderBy(desc(listings.publishedAt)).limit(40);
 }
 
