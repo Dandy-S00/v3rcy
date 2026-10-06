@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  getConversationMessages: vi.fn(),
+  reorderProfileMedia: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +15,8 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  getConversationMessages: mocks.getConversationMessages,
+  reorderProfileMedia: mocks.reorderProfileMedia,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -116,6 +120,33 @@ describe("Security & Best Practices", () => {
       expect(isValidStorageKey("file\0name.png")).toBe(false);
       expect(isValidStorageKey("file name.png")).toBe(false);
       expect(isValidStorageKey("")).toBe(false);
+    });
+  });
+
+  describe("Structured Error Handling Guard", () => {
+    it("returns FORBIDDEN TRPCError when conversation access is denied", async () => {
+      mocks.getConversationMessages.mockRejectedValueOnce(new Error("Conversation access denied"));
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.messaging.messages({ conversationId: 10 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
+    });
+
+    it("returns BAD_REQUEST TRPCError when reordering profile media fails validation", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
+      mocks.reorderProfileMedia.mockRejectedValueOnce(
+        new Error("Submit each of your profile media items exactly once when changing gallery order.")
+      );
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.profile.reorderMedia({ mediaIds: [1, 2] })).rejects.toMatchObject({
+        code: "BAD_REQUEST",
+        message: "Submit each of your profile media items exactly once when changing gallery order.",
+      });
     });
   });
 

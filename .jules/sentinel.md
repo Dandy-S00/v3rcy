@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - SQL LIKE Wildcard Injection & Raw Error Leakage in tRPC Procedures
+**Vulnerability:** Unescaped `%`, `_`, and `\` in user search queries could allow wildcard pattern injection in SQL `LIKE` clauses, while unhandled domain logic errors in tRPC procedures resulted in generic 500 internal server errors.
+**Learning:** Raw string queries in SQL `LIKE` clauses must escape wildcard characters (`%`, `_`, `\`), and database or domain assertion failures in tRPC procedures should be mapped to `TRPCError` with specific status codes (`FORBIDDEN`, `BAD_REQUEST`).
+**Prevention:** Sanitize search input before constructing SQL `LIKE` expressions (`replace(/[%_\\]/g, "\\$&")`) and wrap database calls in tRPC resolvers with try/catch blocks that throw structured `TRPCError`s.
