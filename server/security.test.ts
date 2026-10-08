@@ -83,6 +83,33 @@ describe("Security & Best Practices", () => {
       });
     });
 
+    it("blocks suspended accounts from fetching messaging inbox and messages", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.messaging.inbox()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      await expect(caller.messaging.messages({ conversationId: 10 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
+    it("blocks suspended accounts from fetching my reports", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.safety.mine()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
     it("allows active accounts to update profile", async () => {
       mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
       mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
