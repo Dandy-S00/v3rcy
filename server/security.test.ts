@@ -21,6 +21,7 @@ vi.mock("./platformControls", () => ({
 
 import { appRouter } from "./routers";
 import { isValidStorageKey } from "./_core/storageProxy";
+import { storageGetSignedUrl, storagePut } from "./storage";
 import { getSessionCookieOptions, isSecureRequest } from "./_core/cookies";
 import type { Request } from "express";
 import type { TrpcContext } from "./_core/context";
@@ -116,6 +117,16 @@ describe("Security & Best Practices", () => {
       expect(isValidStorageKey("file\0name.png")).toBe(false);
       expect(isValidStorageKey("file name.png")).toBe(false);
       expect(isValidStorageKey("")).toBe(false);
+    });
+
+    it("storagePut rejects keys with path traversal or invalid characters", async () => {
+      await expect(storagePut("../secret.env", "data")).rejects.toThrow("Invalid storage key");
+      await expect(storagePut("media/../../etc/passwd", "data")).rejects.toThrow("Invalid storage key");
+    });
+
+    it("storageGetSignedUrl rejects keys with path traversal or invalid characters", async () => {
+      await expect(storageGetSignedUrl("../secret.env")).rejects.toThrow("Invalid storage key");
+      await expect(storageGetSignedUrl("media/../../etc/passwd")).rejects.toThrow("Invalid storage key");
     });
   });
 

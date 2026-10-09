@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Storage Helper Key Sanitization Gap
+**Vulnerability:** Utility functions `storagePut` and `storageGetSignedUrl` lacked path validation before querying downstream S3 presign endpoints, allowing un-sanitized relative paths or path traversal sequences if passed directly.
+**Learning:** Storage utilities should enforce strict path validation (`isValidStorageKey`) internally regardless of where the key originated.
+**Prevention:** Apply input key validation checks (`isValidStorageKey`) inside all storage service helpers before forming S3 presign GET/PUT parameters.
