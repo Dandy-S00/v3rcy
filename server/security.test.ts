@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { TRPCError } from "@trpc/server";
+
 const mocks = vi.hoisted(() => ({
   getMyProfile: vi.fn(),
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +17,8 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -98,6 +104,45 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended accounts from sending safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.safety.signal({ subjectUserId: 1, signalType: "safety_alert" })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
+    it("blocks suspended accounts from submitting reports", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.report({ subjectUserId: 1, category: "harassment", detail: "Detailed report message here." })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+  });
+
+  describe("Conversation Access Control", () => {
+    it("rejects unauthorized access with TRPC FORBIDDEN error", async () => {
+      mocks.getConversationMessages.mockRejectedValueOnce(
+        new TRPCError({ code: "FORBIDDEN", message: "Conversation access denied" })
+      );
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.messaging.messages({ conversationId: 999 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
     });
   });
 

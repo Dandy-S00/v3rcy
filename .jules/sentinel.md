@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Generic Database Exceptions Causing 500 Responses on Access Denied
+**Vulnerability:** DB helper procedures throwing raw `Error` on access authorization checks (e.g., non-participant reading private conversation messages) caused tRPC to log internal 500 errors instead of returning clean 403 Forbidden responses.
+**Learning:** In tRPC applications, throwing raw JavaScript `Error` instances inside DB helpers bypasses tRPC's error code mapping, turning client authorization failures into server-side 500 errors.
+**Prevention:** Always throw `TRPCError({ code: "FORBIDDEN", ... })` or `TRPCError({ code: "BAD_REQUEST", ... })` for authorization or user input validation failures across DB helpers and tRPC procedures.
