@@ -5,6 +5,9 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
+  getInbox: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +16,9 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
+  getInbox: mocks.getInbox,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -78,6 +84,38 @@ describe("Security & Best Practices", () => {
       const caller = appRouter.createCaller(makeContext(suspendedUser));
 
       await expect(caller.profile.updateMedia({ mediaId: 5, visibility: "hidden" })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
+    it("blocks suspended accounts from viewing messaging inbox or conversation messages", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.messaging.inbox()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      await expect(caller.messaging.messages({ conversationId: 1 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
+    it("blocks suspended accounts from creating safety signals or reports", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.safety.signal({ listingId: 1, signalType: "safety_alert" })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      await expect(caller.safety.report({ listingId: 1, category: "harassment", detail: "Inappropriate behavior details" })).rejects.toMatchObject({
         code: "FORBIDDEN",
         message: "Your account is currently unavailable.",
       });
