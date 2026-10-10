@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { MessageCircle, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const EMOJIS = ["❤️", "✨", "🔥", "😊", "💬", "👏"];
 
@@ -87,7 +88,12 @@ export default function CommunityFeed() {
               {post.commentsEnabled ? (
                 <form className="comment-form" onSubmit={(event) => submitComment(event, post.id)}>
                   <input name="comment" placeholder="Write a respectful comment…" maxLength={1000} aria-label="Comment" />
-                  <button className="icon-button" aria-label="Send comment"><Send size={16} /></button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="icon-button" aria-label="Send comment"><Send size={16} /></button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">Send comment</TooltipContent>
+                  </Tooltip>
                 </form>
               ) : <p className="comments-disabled">Comments are disabled by the author.</p>}
               {post.isOwner && <button className="privacy-button" onClick={() => setComments.mutate({ postId: post.id, enabled: !post.commentsEnabled })}>{post.commentsEnabled ? "Disable comments" : "Enable comments"}</button>}
