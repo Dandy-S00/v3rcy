@@ -83,6 +83,25 @@ describe("Security & Best Practices", () => {
       });
     });
 
+    it("blocks suspended accounts from sending safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({
+          subjectUserId: 10,
+          signalType: "safety_alert",
+          note: "Suspended user alert",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+    });
+
     it("allows active accounts to update profile", async () => {
       mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
       mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
