@@ -27,6 +27,7 @@ import type { TrpcContext } from "./_core/context";
 
 const suspendedUser = { id: 99, openId: "suspended-user", name: "Suspended", role: "user" as const };
 const activeUser = { id: 100, openId: "active-user", name: "Active", role: "user" as const };
+const suspendedAdmin = { id: 101, openId: "suspended-admin", name: "Suspended Admin", role: "admin" as const };
 
 function makeContext(user: any): TrpcContext {
   return {
@@ -98,6 +99,17 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended admin accounts from executing admin procedures", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 101, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedAdmin));
+
+      await expect(caller.admin.members()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
     });
   });
 

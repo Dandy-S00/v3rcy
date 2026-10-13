@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq, inArray, like, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { conversationParticipants, conversations, listings, messages, moderationActions, profileMedia, reports, safetySignals, type InsertUser, userProfiles, users } from "../drizzle/schema";
@@ -205,7 +206,7 @@ export async function getConversationMessages(userId: number, conversationId: nu
   const db = await getDb();
   if (!db) return [];
   const membership = await db.select().from(conversationParticipants).where(and(eq(conversationParticipants.conversationId, conversationId), eq(conversationParticipants.userId, userId))).limit(1);
-  if (!membership[0]) throw new Error("Conversation access denied");
+  if (!membership[0]) throw new TRPCError({ code: "FORBIDDEN", message: "Conversation access denied" });
   return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
 }
 

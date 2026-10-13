@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Account Status Enforcement Gap in Admin Procedures & Access Control Errors
+**Vulnerability:** Admin procedures allowed suspended admin accounts to execute moderation actions because `adminProcedure` checked `role === 'admin'` without verifying `accountStatus === 'active'`. Additionally, database authorization checks throwing raw `Error` objects resulted in 500 errors instead of structured tRPC 403 `FORBIDDEN` codes.
+**Learning:** Middleware for administrative procedures must verify account active status in addition to user roles. Database access control checks must throw structured `TRPCError` instances.
+**Prevention:** Always check `profile.accountStatus === 'active'` in `adminProcedure` middleware and use `TRPCError({ code: "FORBIDDEN" })` for access control failures.
