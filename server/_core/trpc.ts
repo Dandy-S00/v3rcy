@@ -1,6 +1,7 @@
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
+import { getMyProfile } from "../db";
 import type { TrpcContext } from "./context";
 
 const t = initTRPC.context<TrpcContext>().create({
@@ -33,6 +34,11 @@ export const adminProcedure = t.procedure.use(
 
     if (!ctx.user || ctx.user.role !== 'admin') {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+    }
+
+    const profile = await getMyProfile(ctx.user.id);
+    if (profile && profile.accountStatus !== "active") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Your account is currently unavailable." });
     }
 
     return next({
