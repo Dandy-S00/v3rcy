@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +14,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -78,6 +80,47 @@ describe("Security & Best Practices", () => {
       const caller = appRouter.createCaller(makeContext(suspendedUser));
 
       await expect(caller.profile.updateMedia({ mediaId: 5, visibility: "hidden" })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+    });
+
+    it("blocks suspended accounts from creating safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({ subjectUserId: 10, signalType: "safety_alert" })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from creating reports", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.report({ subjectUserId: 10, category: "harassment", detail: "Harassment details here..." })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createReport).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from reordering profile media", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.profile.reorderMedia({ mediaIds: [1, 2] })).rejects.toMatchObject({
         code: "FORBIDDEN",
         message: "Your account is currently unavailable.",
       });
