@@ -210,16 +210,22 @@ export function AIChatBox({
               {suggestedPrompts && suggestedPrompts.length > 0 && (
                 <div className="flex max-w-2xl flex-wrap justify-center gap-2">
                   {suggestedPrompts.map((prompt, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => onSendMessage(prompt)}
-                      disabled={isLoading}
-                      aria-label={`Send prompt: ${prompt}`}
-                      className="rounded-lg border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      {prompt}
-                    </button>
+                    <Tooltip key={index}>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          onClick={() => onSendMessage(prompt)}
+                          disabled={isLoading}
+                          aria-label={`Send prompt: ${prompt}`}
+                          className="rounded-lg border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {prompt}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        Click to send prompt
+                      </TooltipContent>
+                    </Tooltip>
                   ))}
                 </div>
               )}
@@ -286,6 +292,8 @@ export function AIChatBox({
               {isLoading && (
                 <div
                   className="flex items-start gap-3"
+                  aria-live="polite"
+                  aria-busy="true"
                   style={
                     minHeightForLastMessage > 0
                       ? { minHeight: `${minHeightForLastMessage}px` }
@@ -295,8 +303,9 @@ export function AIChatBox({
                   <div className="size-8 shrink-0 mt-1 rounded-full bg-primary/10 flex items-center justify-center">
                     <Sparkles className="size-4 text-primary" />
                   </div>
-                  <div className="rounded-lg bg-muted px-4 py-2.5">
+                  <div className="rounded-lg bg-muted px-4 py-2.5 flex items-center gap-2">
                     <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    <span className="sr-only">AI is generating a response...</span>
                   </div>
                 </div>
               )}
