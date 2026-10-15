@@ -74,6 +74,17 @@ export function registerStorageProxy(app: Express) {
         return;
       }
 
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          res.status(502).send("Invalid signed URL protocol");
+          return;
+        }
+      } catch {
+        res.status(502).send("Invalid signed URL");
+        return;
+      }
+
       res.set("Cache-Control", "no-store");
       res.redirect(307, url);
     } catch (err) {

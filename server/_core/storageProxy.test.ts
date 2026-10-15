@@ -104,4 +104,33 @@ describe("storageProxy path validation", () => {
 
     fetchSpy.mockRestore();
   });
+
+  it("rejects signed URLs with non-http/https protocols with 502 Bad Gateway", async () => {
+    ENV.serviceApiUrl = "https://example.com/api";
+    ENV.serviceApiKey = "test-key";
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ url: "javascript:alert(1)" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+
+    let handler: (req: express.Request, res: express.Response) => Promise<void> = async () => {};
+    const app = {
+      get: (_path: string, fn: any) => {
+        handler = fn;
+      },
+    } as unknown as express.Express;
+
+    registerStorageProxy(app);
+
+    const { req, res } = createMockReqRes("profile-media/1/photo.jpg");
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(502);
+    expect(res.body).toBe("Invalid signed URL protocol");
+
+    fetchSpy.mockRestore();
+  });
 });
