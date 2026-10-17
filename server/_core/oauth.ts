@@ -12,6 +12,10 @@ function getQueryParam(req: Request, key: string): string | undefined {
 
 export function registerOAuthRoutes(app: Express) {
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
+    // Security headers: prevent browser caching of OAuth state/tokens and mime sniffing
+    res.setHeader("Cache-Control", "no-store, max-age=0");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
 

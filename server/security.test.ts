@@ -22,8 +22,11 @@ vi.mock("./platformControls", () => ({
 import { appRouter } from "./routers";
 import { isValidStorageKey } from "./_core/storageProxy";
 import { getSessionCookieOptions, isSecureRequest } from "./_core/cookies";
+import express from "express";
+import type { AddressInfo } from "net";
 import type { Request } from "express";
 import type { TrpcContext } from "./_core/context";
+import { registerOAuthRoutes } from "./_core/oauth";
 
 const suspendedUser = { id: 99, openId: "suspended-user", name: "Suspended", role: "user" as const };
 const activeUser = { id: 100, openId: "active-user", name: "Active", role: "user" as const };
@@ -145,6 +148,24 @@ describe("Security & Best Practices", () => {
         headers: { "x-forwarded-proto": "https" },
       } as unknown as Request;
       expect(isSecureRequest(forwardedHttpsReq)).toBe(true);
+    });
+  });
+
+  describe("OAuth Security Headers", () => {
+    it("sets Cache-Control no-store and X-Content-Type-Options on OAuth callback response", async () => {
+      const app = express();
+      registerOAuthRoutes(app);
+      const server = app.listen(0);
+      const address = server.address() as AddressInfo;
+      const url = `http://127.0.0.1:${address.port}/api/oauth/callback`;
+
+      try {
+        const res = await fetch(url);
+        expect(res.headers.get("cache-control")).toBe("no-store, max-age=0");
+        expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+      } finally {
+        server.close();
+      }
     });
   });
 });
