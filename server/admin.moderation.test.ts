@@ -29,10 +29,22 @@ function createAdminContext(): TrpcContext {
 }
 
 describe("admin.moderateListing", () => {
-  it.each(["approve", "flag", "remove"] as const)("records the %s moderation transition", async (action) => {
-    moderateListing.mockClear();
-    const caller = appRouter.createCaller(createAdminContext());
-    await caller.admin.moderateListing({ listingId: 41, action, note: "Moderation review" });
-    expect(moderateListing).toHaveBeenCalledWith({ adminUserId: 77, listingId: 41, action, note: "Moderation review" });
-  });
+  it.each(["approve", "flag", "remove"] as const)(
+    "records the %s moderation transition",
+    async action => {
+      moderateListing.mockClear();
+      const caller = appRouter.createCaller(createAdminContext());
+      await caller.admin.moderateListing({
+        listingId: 41,
+        action,
+        note: "Moderation review",
+      });
+      expect(moderateListing).toHaveBeenCalledWith({
+        adminUserId: 77,
+        listingId: 41,
+        action,
+        note: "Moderation review",
+      });
+    }
+  );
 });

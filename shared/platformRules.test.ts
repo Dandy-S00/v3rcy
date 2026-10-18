@@ -13,7 +13,9 @@ describe("category verification rules", () => {
   });
 
   it("allows non-restricted categories without an elevated verification state", () => {
-    expect(canPublishInCategory("dating", "none")).toMatchObject({ allowed: true });
+    expect(canPublishInCategory("dating", "none")).toMatchObject({
+      allowed: true,
+    });
   });
 });
 
