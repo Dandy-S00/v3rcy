@@ -10,7 +10,7 @@ function getStorageConfig() {
 
   if (!serviceUrl || !serviceKey) {
     throw new Error(
-      "Storage config missing: set SERVICE_API_URL and SERVICE_API_KEY",
+      "Storage config missing: set SERVICE_API_URL and SERVICE_API_KEY"
     );
   }
 
@@ -31,7 +31,7 @@ function appendHashSuffix(relKey: string): string {
 export async function storagePut(
   relKey: string,
   data: Buffer | Uint8Array | string,
-  contentType = "application/octet-stream",
+  contentType = "application/octet-stream"
 ): Promise<{ key: string; url: string }> {
   const { serviceUrl, serviceKey } = getStorageConfig();
   const key = appendHashSuffix(normalizeKey(relKey));
@@ -71,7 +71,9 @@ export async function storagePut(
   return { key, url: `/storage/${key}` };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(
+  relKey: string
+): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
   return { key, url: `/storage/${key}` };
 }

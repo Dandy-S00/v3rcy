@@ -39,7 +39,13 @@ services:
       traefik.http.routers.v3rya-http.middlewares: v3rya-https-redirect
       traefik.http.middlewares.v3rya-https-redirect.redirectscheme.scheme: https
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/readyz').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/readyz').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -75,7 +81,11 @@ services:
     networks:
       - nitevow
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      test:
+        [
+          "CMD-SHELL",
+          "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent",
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
