@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { TRPCError } from "@trpc/server";
+
 const mocks = vi.hoisted(() => ({
   getMyProfile: vi.fn(),
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +16,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -145,6 +149,21 @@ describe("Security & Best Practices", () => {
         headers: { "x-forwarded-proto": "https" },
       } as unknown as Request;
       expect(isSecureRequest(forwardedHttpsReq)).toBe(true);
+    });
+  });
+
+  describe("Authorization Error Handling", () => {
+    it("returns FORBIDDEN TRPCError when unauthorized conversation access occurs", async () => {
+      mocks.getConversationMessages.mockRejectedValueOnce(
+        new TRPCError({ code: "FORBIDDEN", message: "Conversation access denied" })
+      );
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.messaging.messages({ conversationId: 999 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
     });
   });
 });
