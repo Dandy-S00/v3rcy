@@ -8,7 +8,10 @@ function createTestApp() {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    res.setHeader(
+      "Permissions-Policy",
+      "camera=(), microphone=(), geolocation=()"
+    );
     res.setHeader("X-XSS-Protection", "1; mode=block");
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     next();
@@ -31,8 +34,12 @@ describe("Security Headers Middleware", () => {
       expect(res.status).toBe(200);
       expect(res.headers.get("x-content-type-options")).toBe("nosniff");
       expect(res.headers.get("x-frame-options")).toBe("DENY");
-      expect(res.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
-      expect(res.headers.get("permissions-policy")).toBe("camera=(), microphone=(), geolocation=()");
+      expect(res.headers.get("referrer-policy")).toBe(
+        "strict-origin-when-cross-origin"
+      );
+      expect(res.headers.get("permissions-policy")).toBe(
+        "camera=(), microphone=(), geolocation=()"
+      );
       expect(res.headers.get("x-xss-protection")).toBe("1; mode=block");
       expect(res.headers.get("cross-origin-opener-policy")).toBe("same-origin");
     } finally {
