@@ -9,7 +9,7 @@ const publicRoutes: Record<string, SeoRoute> = {
   "/safety": { title: "Safety information | v3rya", description: "Learn how v3rya supports privacy, reporting, and thoughtful adult-only connections.", body: "<h1>Safety information</h1><p>v3rya supports privacy-minded adult connections with reporting and safety tools.</p><p><a href=\"/\">Return to v3rya</a> · <a href=\"/browse\">Browse local connections</a></p>" },
 };
 const privatePrefixes = ["/profile", "/post", "/inbox", "/report", "/studio"];
-const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const escape = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 export async function injectRouteSeo(template: string, requestPath: string) {
   const path = requestPath.replace(/\/+$/, "") || "/"; const listingMatch = path.match(/^\/listing\/(\d+)$/); let route = publicRoutes[path];
