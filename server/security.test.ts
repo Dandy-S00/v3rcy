@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +14,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -116,6 +118,19 @@ describe("Security & Best Practices", () => {
       expect(isValidStorageKey("file\0name.png")).toBe(false);
       expect(isValidStorageKey("file name.png")).toBe(false);
       expect(isValidStorageKey("")).toBe(false);
+    });
+  });
+
+  describe("Messaging Access Control Authorization", () => {
+    it("returns FORBIDDEN error code when conversation access is denied", async () => {
+      mocks.getConversationMessages.mockRejectedValueOnce(new Error("Conversation access denied"));
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(caller.messaging.messages({ conversationId: 999 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Conversation access denied",
+      });
     });
   });
 
