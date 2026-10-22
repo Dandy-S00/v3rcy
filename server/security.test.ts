@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +14,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -22,6 +24,7 @@ vi.mock("./platformControls", () => ({
 import { appRouter } from "./routers";
 import { isValidStorageKey } from "./_core/storageProxy";
 import { getSessionCookieOptions, isSecureRequest } from "./_core/cookies";
+import { injectRouteSeo } from "./_core/seo";
 import type { Request } from "express";
 import type { TrpcContext } from "./_core/context";
 
@@ -83,6 +86,29 @@ describe("Security & Best Practices", () => {
       });
     });
 
+    it("blocks suspended accounts from sending safety signals and reports", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({ subjectUserId: 10, signalType: "safety_alert", note: "Alert" })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      await expect(
+        caller.safety.report({ subjectUserId: 10, category: "harassment", detail: "Detailed description here" })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+      expect(mocks.createReport).not.toHaveBeenCalled();
+    });
+
     it("allows active accounts to update profile", async () => {
       mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
       mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
@@ -116,6 +142,15 @@ describe("Security & Best Practices", () => {
       expect(isValidStorageKey("file\0name.png")).toBe(false);
       expect(isValidStorageKey("file name.png")).toBe(false);
       expect(isValidStorageKey("")).toBe(false);
+    });
+  });
+
+  describe("SEO HTML Sanitization", () => {
+    it("escapes single quotes and HTML characters in metadata", async () => {
+      const template = "<!--route-head--><!--route-noscript-->";
+      const result = await injectRouteSeo(template, "/");
+      expect(result).not.toContain("'");
+      expect(result).toContain("v3rya — Private connections, thoughtfully held");
     });
   });
 
