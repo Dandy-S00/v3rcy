@@ -133,6 +133,19 @@ describe("Security & Best Practices", () => {
       expect(options.secure).toBe(true);
     });
 
+    it("returns secure=false for non-https session cookie options in local dev", () => {
+      const mockReq = {
+        protocol: "http",
+        headers: {},
+      } as unknown as Request;
+
+      const options = getSessionCookieOptions(mockReq);
+      expect(options.httpOnly).toBe(true);
+      expect(options.sameSite).toBe("lax");
+      expect(options.path).toBe("/");
+      expect(options.secure).toBe(false);
+    });
+
     it("correctly identifies non-secure vs secure requests", () => {
       const httpReq = {
         protocol: "http",
