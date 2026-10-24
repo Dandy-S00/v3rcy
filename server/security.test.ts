@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +14,7 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -98,6 +100,34 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended accounts from sending safety signals and reports", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({ subjectUserId: 100, signalType: "safety_alert", note: "Test alert" })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", message: "Your account is currently unavailable." });
+
+      await expect(
+        caller.safety.report({ subjectUserId: 100, category: "harassment", detail: "Test harassment detail" })
+      ).rejects.toMatchObject({ code: "FORBIDDEN", message: "Your account is currently unavailable." });
+    });
+
+    it("rejects self-signaling and self-reporting attempts", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 100, accountStatus: "active" });
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      await expect(
+        caller.safety.signal({ subjectUserId: 100, signalType: "safety_alert", note: "Self signal" })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "You cannot signal your own profile." });
+
+      await expect(
+        caller.safety.report({ subjectUserId: 100, category: "harassment", detail: "Self reporting detail" })
+      ).rejects.toMatchObject({ code: "BAD_REQUEST", message: "You cannot report your own profile." });
     });
   });
 
