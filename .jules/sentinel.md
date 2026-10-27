@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Protocol Mismatch in OAuth State Cookie Clearance
+**Vulnerability:** Hardcoded `{ secure: true }` in `res.clearCookie` during OAuth state verification caused browsers over HTTP (development/proxy setups) to ignore state cookie clearance.
+**Learning:** Cookie clearance options (`secure`, `sameSite`, `path`) must match the dynamic options used during cookie creation (`getSessionCookieOptions(req)`).
+**Prevention:** Always use centralized cookie configuration helpers for both setting and clearing cookies across HTTP and HTTPS environments.
