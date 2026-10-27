@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  getInbox: vi.fn(),
+  getConversationMessages: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +15,8 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  getInbox: mocks.getInbox,
+  getConversationMessages: mocks.getConversationMessages,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -81,6 +85,25 @@ describe("Security & Best Practices", () => {
         code: "FORBIDDEN",
         message: "Your account is currently unavailable.",
       });
+    });
+
+    it("blocks suspended accounts from querying inbox and messages", async () => {
+      mocks.getMyProfile.mockResolvedValue({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(caller.messaging.inbox()).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      await expect(caller.messaging.messages({ conversationId: 10 })).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.getInbox).not.toHaveBeenCalled();
+      expect(mocks.getConversationMessages).not.toHaveBeenCalled();
     });
 
     it("allows active accounts to update profile", async () => {
