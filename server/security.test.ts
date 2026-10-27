@@ -146,5 +146,24 @@ describe("Security & Best Practices", () => {
       } as unknown as Request;
       expect(isSecureRequest(forwardedHttpsReq)).toBe(true);
     });
+
+    it("dynamically adjusts cookie clear options for http vs https", () => {
+      const httpReq = { protocol: "http", headers: {} } as unknown as Request;
+      const httpsReq = { protocol: "https", headers: {} } as unknown as Request;
+
+      expect(getSessionCookieOptions(httpReq)).toEqual({
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: false,
+      });
+
+      expect(getSessionCookieOptions(httpsReq)).toEqual({
+        httpOnly: true,
+        path: "/",
+        sameSite: "lax",
+        secure: true,
+      });
+    });
   });
 });
