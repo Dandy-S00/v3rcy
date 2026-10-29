@@ -22,6 +22,7 @@ function originFor(req: express.Request) { return `${req.protocol}://${req.get("
 
 async function startServer() {
   const app = express(); const server = createServer(app);
+  app.disable("x-powered-by");
   app.use((_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");

@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2025-03-08 - Framework Fingerprinting and Dynamic Cookie Security
+**Vulnerability:** Express default `X-Powered-By` response header revealed framework information, and hardcoded secure flag in OAuth cookie cleanup could misalign on non-HTTPS environments.
+**Learning:** Disable `X-Powered-By` headers using `app.disable("x-powered-by")` and dynamically evaluate request protocol with `isSecureRequest(req)` for cookie options.
+**Prevention:** Always disable `x-powered-by` during Express initialization and evaluate `isSecureRequest(req)` dynamically across all cookie operations.

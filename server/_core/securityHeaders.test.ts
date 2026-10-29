@@ -4,6 +4,7 @@ import type { AddressInfo } from "net";
 
 function createTestApp() {
   const app = express();
+  app.disable("x-powered-by");
   app.use((_req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "DENY");
@@ -35,6 +36,7 @@ describe("Security Headers Middleware", () => {
       expect(res.headers.get("permissions-policy")).toBe("camera=(), microphone=(), geolocation=()");
       expect(res.headers.get("x-xss-protection")).toBe("1; mode=block");
       expect(res.headers.get("cross-origin-opener-policy")).toBe("same-origin");
+      expect(res.headers.get("x-powered-by")).toBeNull();
     } finally {
       server.close();
     }
