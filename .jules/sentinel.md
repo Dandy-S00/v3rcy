@@ -12,3 +12,8 @@
 **Vulnerability:** Raw Express endpoints (such as `POST /api/profile-media`) bypassed tRPC account status middlewares (`ensureActiveAccount`), allowing suspended or restricted accounts to upload media to backend storage.
 **Learning:** When adding standalone Express REST endpoints outside tRPC, account status checks (`profile.accountStatus !== "active"`) must be explicitly applied alongside authentication checks.
 **Prevention:** Always verify `profile.accountStatus === "active"` in all state-modifying Express endpoints before proceeding with file storage or database operations.
+
+## 2026-10-21 - Account Status Enforcement Gap in Safety Router Procedures
+**Vulnerability:** Protected safety procedures (`safety.signal` and `safety.report`) omitted `ensureActiveAccount` checks, allowing suspended or restricted accounts to submit reports and trigger safety alerts.
+**Learning:** All state-modifying and reporting endpoints must verify that the caller's account status is `active` before consuming rate limits or performing database mutations.
+**Prevention:** Always invoke `await ensureActiveAccount(ctx.user.id)` in all user-facing mutation procedures prior to processing the request.
