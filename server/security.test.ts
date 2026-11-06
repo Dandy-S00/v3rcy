@@ -5,6 +5,8 @@ const mocks = vi.hoisted(() => ({
   saveMyProfile: vi.fn(),
   deleteProfileMedia: vi.fn(),
   createSafetySignal: vi.fn(),
+  createReport: vi.fn(),
+  createListing: vi.fn(),
   consumeActionLimit: vi.fn().mockResolvedValue(true),
 }));
 
@@ -13,6 +15,8 @@ vi.mock("./db", () => ({
   saveMyProfile: mocks.saveMyProfile,
   deleteProfileMedia: mocks.deleteProfileMedia,
   createSafetySignal: mocks.createSafetySignal,
+  createReport: mocks.createReport,
+  createListing: mocks.createListing,
 }));
 
 vi.mock("./platformControls", () => ({
@@ -98,6 +102,67 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended accounts from creating listings and prevents rate limit consumption", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended", age: 25, verificationStatus: "none" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.listings.create({
+          title: "Safe Coffee Chat",
+          description: "Looking for casual conversation in downtown Seattle coffee shops.",
+          category: "casual",
+          city: "Seattle",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.consumeActionLimit).not.toHaveBeenCalled();
+      expect(mocks.createListing).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from sending safety signals and prevents rate limit consumption", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({
+          listingId: 10,
+          signalType: "safety_alert",
+          note: "Suspicious activity detected.",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.consumeActionLimit).not.toHaveBeenCalled();
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+    });
+
+    it("blocks suspended accounts from creating reports and prevents rate limit consumption", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.report({
+          listingId: 10,
+          category: "safety_concern",
+          detail: "This listing contains unsafe external links.",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.consumeActionLimit).not.toHaveBeenCalled();
+      expect(mocks.createReport).not.toHaveBeenCalled();
     });
   });
 
