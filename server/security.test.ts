@@ -25,8 +25,18 @@ import { getSessionCookieOptions, isSecureRequest } from "./_core/cookies";
 import type { Request } from "express";
 import type { TrpcContext } from "./_core/context";
 
-const suspendedUser = { id: 99, openId: "suspended-user", name: "Suspended", role: "user" as const };
-const activeUser = { id: 100, openId: "active-user", name: "Active", role: "user" as const };
+const suspendedUser = {
+  id: 99,
+  openId: "suspended-user",
+  name: "Suspended",
+  role: "user" as const,
+};
+const activeUser = {
+  id: 100,
+  openId: "active-user",
+  name: "Active",
+  role: "user" as const,
+};
 
 function makeContext(user: any): TrpcContext {
   return {
@@ -39,7 +49,10 @@ function makeContext(user: any): TrpcContext {
 describe("Security & Best Practices", () => {
   describe("Account Status Enforcement", () => {
     it("blocks suspended accounts from saving profile updates", async () => {
-      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+      mocks.getMyProfile.mockResolvedValueOnce({
+        userId: 99,
+        accountStatus: "suspended",
+      });
 
       const caller = appRouter.createCaller(makeContext(suspendedUser));
 
@@ -60,11 +73,16 @@ describe("Security & Best Practices", () => {
     });
 
     it("blocks suspended accounts from deleting profile media", async () => {
-      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+      mocks.getMyProfile.mockResolvedValueOnce({
+        userId: 99,
+        accountStatus: "suspended",
+      });
 
       const caller = appRouter.createCaller(makeContext(suspendedUser));
 
-      await expect(caller.profile.deleteMedia({ mediaId: 5 })).rejects.toMatchObject({
+      await expect(
+        caller.profile.deleteMedia({ mediaId: 5 })
+      ).rejects.toMatchObject({
         code: "FORBIDDEN",
         message: "Your account is currently unavailable.",
       });
@@ -73,19 +91,30 @@ describe("Security & Best Practices", () => {
     });
 
     it("blocks suspended accounts from updating media options", async () => {
-      mocks.getMyProfile.mockResolvedValueOnce({ userId: 99, accountStatus: "suspended" });
+      mocks.getMyProfile.mockResolvedValueOnce({
+        userId: 99,
+        accountStatus: "suspended",
+      });
 
       const caller = appRouter.createCaller(makeContext(suspendedUser));
 
-      await expect(caller.profile.updateMedia({ mediaId: 5, visibility: "hidden" })).rejects.toMatchObject({
+      await expect(
+        caller.profile.updateMedia({ mediaId: 5, visibility: "hidden" })
+      ).rejects.toMatchObject({
         code: "FORBIDDEN",
         message: "Your account is currently unavailable.",
       });
     });
 
     it("allows active accounts to update profile", async () => {
-      mocks.getMyProfile.mockResolvedValueOnce({ userId: 100, accountStatus: "active" });
-      mocks.saveMyProfile.mockResolvedValueOnce({ userId: 100, displayName: "Active Name" });
+      mocks.getMyProfile.mockResolvedValueOnce({
+        userId: 100,
+        accountStatus: "active",
+      });
+      mocks.saveMyProfile.mockResolvedValueOnce({
+        userId: 100,
+        displayName: "Active Name",
+      });
 
       const caller = appRouter.createCaller(makeContext(activeUser));
 
@@ -98,6 +127,52 @@ describe("Security & Best Practices", () => {
       });
 
       expect(result).toEqual({ userId: 100, displayName: "Active Name" });
+    });
+
+    it("blocks suspended accounts from creating safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({
+        userId: 99,
+        accountStatus: "suspended",
+      });
+
+      const caller = appRouter.createCaller(makeContext(suspendedUser));
+
+      await expect(
+        caller.safety.signal({
+          listingId: 10,
+          signalType: "safety_alert",
+          note: "Spam warning",
+        })
+      ).rejects.toMatchObject({
+        code: "FORBIDDEN",
+        message: "Your account is currently unavailable.",
+      });
+
+      expect(mocks.createSafetySignal).not.toHaveBeenCalled();
+    });
+
+    it("allows active accounts to create safety signals", async () => {
+      mocks.getMyProfile.mockResolvedValueOnce({
+        userId: 100,
+        accountStatus: "active",
+      });
+      mocks.createSafetySignal.mockResolvedValueOnce({ id: 1 });
+
+      const caller = appRouter.createCaller(makeContext(activeUser));
+
+      const result = await caller.safety.signal({
+        listingId: 10,
+        signalType: "safe_contact",
+        note: "Verified contact",
+      });
+
+      expect(result).toEqual({ id: 1 });
+      expect(mocks.createSafetySignal).toHaveBeenCalledWith({
+        listingId: 10,
+        signalType: "safe_contact",
+        note: "Verified contact",
+        reporterUserId: 100,
+      });
     });
   });
 
